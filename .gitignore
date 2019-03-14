@@ -1,0 +1,4 @@
+.pioenvs
+.vscode
+build
+.DS_Store
