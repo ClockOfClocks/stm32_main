@@ -1,10 +1,32 @@
 #include "main.h"
 #include "timing.h"
+#include "stdbool.h"
+
+
+struct Axis {
+   uint32_t pointer_position;
+   // uint8_t state;
+   // bool direction; // true – positive
+   float speed_degree_per_second;
+   int16_t pointer_diff_per_interruption; // speed
+   // uint32_t target_pointer_position; 
+
+   volatile uint32_t *sin_pwm_pointer;
+   volatile uint32_t *cos_pwm_pointer;
+   volatile uint32_t *sin_gpio_port_bsrr;
+   volatile uint32_t *cos_gpio_port_bsrr;
+   uint32_t sin_cos_direction[4]; // [+sin, -sin, +cos, -cos]
+};
 
 void RCC_Init (void);
 void GPIO_Init (void);
 void PWM_Init (void);
 void Systick_Init (void);
+
+void Axis_Init (void);
+void update_axis_sin_cos(struct Axis *axis);
+
+struct Axis ax1;
 
 int16_t sin_data[256] = // 256 values per 2pi, +\- 1024
 {0,25,50,75,100,125,150,175,199,224,248,273,297,321,344,368,391
@@ -34,20 +56,14 @@ int16_t sin_data[256] = // 256 values per 2pi, +\- 1024
 
 #define PERIODS_PER_REVOLUTION 180 // 720 (steps per revolution) / 4
 
-#define ONE_PERIOD_POINTER_DIFF (1 << 20) // 12 + 8 bit
-
-#define ONE_DEGREE_POINTER_DIFF (ONE_PERIOD_POINTER_DIFF * PERIODS_PER_REVOLUTION / 360)
-
-float speed_degree_per_second = 20;
-
-uint32_t pointer_position = INITIAL_POINTER_POSITION;
-
-// Calculable values
-uint32_t target_pointer_position;
-int16_t pointer_diff_per_interruption;
+#define ONE_DEGREE_POINTER_DIFF ( (1 << 20) * PERIODS_PER_REVOLUTION / 360 ) // one_period_pointer_diff * periods_per_revolution / 360
 
 int main(void){		
-  pointer_diff_per_interruption = (speed_degree_per_second * ONE_DEGREE_POINTER_DIFF) / INTERRUPTION_FREQ;
+  Axis_Init();
+  
+  ax1.speed_degree_per_second = 10;
+  // ax1.direction = true;
+  ax1.pointer_diff_per_interruption = (ax1.speed_degree_per_second * ONE_DEGREE_POINTER_DIFF) / INTERRUPTION_FREQ;
   // (X degress/s * (1 << 20) * (720/4) / 360) / 23437.5  ~ X * 5.5924
 
   RCC_Init();
@@ -61,6 +77,17 @@ int main(void){
 	}
 }
 
+void Axis_Init (void){
+  ax1.pointer_position = INITIAL_POINTER_POSITION;
+  ax1.sin_pwm_pointer = & TIM2->CCR1;
+  ax1.cos_pwm_pointer = & TIM2->CCR2;
+  ax1.sin_cos_direction[0] = ( GPIO_BSRR_BS8 | GPIO_BSRR_BR9 );
+  ax1.sin_cos_direction[1] = ( GPIO_BSRR_BR8 | GPIO_BSRR_BS9 );
+  ax1.sin_cos_direction[2] = ( GPIO_BSRR_BS10 | GPIO_BSRR_BR11 );
+  ax1.sin_cos_direction[3] = ( GPIO_BSRR_BR10 | GPIO_BSRR_BS11 );
+  ax1.sin_gpio_port_bsrr = & GPIOB->BSRR;
+  ax1.cos_gpio_port_bsrr = & GPIOB->BSRR;
+}
 
 void RCC_Init (void){
 	
@@ -167,32 +194,35 @@ void PWM_Init (void){
 
 void TIM2_IRQHandler(void)
 {
-    TIM2->SR &= ~TIM_SR_UIF; // очистка флага прерывания
+    TIM2->SR &= ~TIM_SR_UIF; // clear interruption flag
 
-    pointer_position += pointer_diff_per_interruption;
+    ax1.pointer_position += ax1.pointer_diff_per_interruption;
+    update_axis_sin_cos(& ax1);
+}
 
+void update_axis_sin_cos(struct Axis *axis){
     // clear 12 most bits and shift value right to trim 12 lower bits
-    uint8_t sin_pointer = ( pointer_position & ~( ( ( 1 << 12 ) - 1 ) << 20 ) ) >> 12;
+    uint8_t sin_pointer = ( axis->pointer_position & ~( ( ( 1 << 12 ) - 1 ) << 20 ) ) >> 12;
     uint8_t cos_pointer = sin_pointer + COS_OFFSET;
 
     int16_t sin_value = sin_data[ sin_pointer ];
     int16_t cos_value = sin_data[ cos_pointer ];
     
     if(sin_value < 0){
-      GPIOB->BSRR = ( GPIO_BSRR_BR8 | GPIO_BSRR_BS9);
-      TIM2->CCR1 = -sin_value;
+      *axis->sin_gpio_port_bsrr = axis->sin_cos_direction[1];
+      *axis->sin_pwm_pointer = -sin_value;
     }else{
       // Positive or zero
-      GPIOB->BSRR = ( GPIO_BSRR_BS8 | GPIO_BSRR_BR9);
-      TIM2->CCR1 = sin_value;
+      *axis->sin_gpio_port_bsrr = axis->sin_cos_direction[0];
+      *axis->sin_pwm_pointer = sin_value;
     }
 
     if(cos_value < 0){
-      GPIOB->BSRR = ( GPIO_BSRR_BR10 | GPIO_BSRR_BS11);
-      TIM2->CCR2 = -cos_value;
+      *axis->cos_gpio_port_bsrr = axis->sin_cos_direction[3];
+      *axis->cos_pwm_pointer = -cos_value;
     }else{
       // Positive or zero
-      GPIOB->BSRR = ( GPIO_BSRR_BS10 | GPIO_BSRR_BR11);
-      TIM2->CCR2 = cos_value;
+      *axis->cos_gpio_port_bsrr = axis->sin_cos_direction[2];
+      *axis->cos_pwm_pointer = cos_value;
     }
 }
