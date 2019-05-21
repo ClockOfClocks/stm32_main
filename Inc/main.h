@@ -5,6 +5,6 @@
 
 #include "axis.h"
 #include "timing.h"
-
+#include "queue.h"
 
 void Axis_Init (void);

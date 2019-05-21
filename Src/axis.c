@@ -45,3 +45,35 @@ void update_axis_sin_cos(struct Axis *axis){
       *axis->cos_pwm_pointer = cos_value;
     }
 }
+
+void set_axis_speed(struct Axis *axis, float degreePerSecond){
+  axis->pointer_diff_per_interruption = (degreePerSecond * ONE_DEGREE_POINTER_DIFF) / INTERRUPTION_FREQ;
+  // (X degress/s * (1 << 20) * (720/4) / 360) / 23437.5  ~ X * 5.5924
+}
+
+void move_axis_to(struct Axis *axis, float degree, bool relative){
+    int32_t diff = (ONE_DEGREE_POINTER_DIFF * degree);
+
+    if(relative){
+        axis->target_pointer_position = axis->pointer_position + diff;
+    }else{
+        axis->target_pointer_position = INITIAL_POINTER_POSITION + diff;
+    }
+    axis->direction = axis->target_pointer_position > axis->pointer_position;
+}
+
+void extract_task(struct Axis *axis){
+    if(queue_size(axis->queue) == 0){
+      axis->state = AXIS_STATUS_IDLE;
+    }else{
+      struct AxisTask *task = queue_entry(queue_peek(axis->queue), struct AxisTask, n);
+      set_axis_speed(axis, task->speed);
+      move_axis_to(axis, task->degree, task->relative);
+      
+      // Remove task from queue
+      queue_pop(axis->queue);
+
+      // Let's move axis 
+      axis->state = AXIS_STATUS_MOVE;
+    }
+}
