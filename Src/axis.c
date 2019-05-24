@@ -67,13 +67,24 @@ void extract_task(struct Axis *axis){
       axis->state = AXIS_STATUS_IDLE;
     }else{
       struct AxisTask *task = queue_entry(queue_peek(axis->queue), struct AxisTask, n);
-      set_axis_speed(axis, task->speed);
-      move_axis_to(axis, task->degree, task->relative);
+
+      switch (task->type)
+      {
+      case AXIS_TASK_TYPE_MOVE:
+        set_axis_speed(axis, task->speed);
+        move_axis_to(axis, task->degree, task->relative);
+        // Let's move axis 
+        axis->state = AXIS_STATUS_MOVE;
+        break;
+      case AXIS_TASK_TYPE_WAIT:
+        axis->wait_until_ms = millis() + task->wait_ms;
+        axis->state = AXIS_STATUS_WAIT;
+        break;
       
+      default:
+        break;
+      }      
       // Remove task from queue
       queue_pop(axis->queue);
-
-      // Let's move axis 
-      axis->state = AXIS_STATUS_MOVE;
     }
 }

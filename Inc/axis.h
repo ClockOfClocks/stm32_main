@@ -2,6 +2,7 @@
 #include "stdbool.h"
 
 #include "queue.h"
+#include "timing.h"
 
 #define COS_OFFSET 64
 
@@ -19,6 +20,10 @@
 #define AXIS_STATUS_CALIBRATION  1
 #define AXIS_STATUS_MOVE 2
 #define AXIS_STATUS_IDLE 3
+#define AXIS_STATUS_WAIT 4
+
+#define AXIS_TASK_TYPE_MOVE 0
+#define AXIS_TASK_TYPE_WAIT 1
 
 struct Axis {
    uint32_t pointer_position;
@@ -26,6 +31,7 @@ struct Axis {
    bool direction; // true – positive
    int16_t pointer_diff_per_interruption; // speed
    uint32_t target_pointer_position; 
+   uint32_t wait_until_ms;
 
    volatile uint32_t *sin_pwm_pointer;
    volatile uint32_t *cos_pwm_pointer;
@@ -37,10 +43,12 @@ struct Axis {
 };
 
 struct AxisTask {
-     float degree;
-     float speed;
-     bool relative;
-     struct QueueNode n;
+   uint8_t type;
+   float degree;
+   float speed;
+   bool relative;
+   uint16_t wait_ms;
+   struct QueueNode n;
  };
 
 void update_axis_sin_cos(struct Axis *axis);

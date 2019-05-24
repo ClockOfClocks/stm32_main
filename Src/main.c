@@ -16,22 +16,43 @@ int main(void){
 
   // Test tasks
   struct AxisTask task;
+  task.type = AXIS_TASK_TYPE_MOVE;
   task.degree = 15;
   task.speed = 10;
   task.relative = false;
   queue_push(ax1.queue, &task.n);
   
   struct AxisTask task2;
+  task2.type = AXIS_TASK_TYPE_MOVE;
   task2.degree = -30;
   task2.speed = 20;
   task2.relative = false;
   queue_push(ax1.queue, &task2.n);
   
   struct AxisTask task3;
-  task3.degree = 30;
-  task3.speed = 30;
-  task3.relative = true;
+  task3.type = AXIS_TASK_TYPE_WAIT;
+  task3.wait_ms = 1000;
   queue_push(ax1.queue, &task3.n);
+
+  struct AxisTask task4;
+  task4.type = AXIS_TASK_TYPE_MOVE;
+  task4.degree = 30;
+  task4.speed = 30;
+  task4.relative = true;
+  queue_push(ax1.queue, &task4.n);
+
+  struct AxisTask task5;
+  task5.type = AXIS_TASK_TYPE_WAIT;
+  task5.wait_ms = 2000;
+  queue_push(ax1.queue, &task5.n);
+
+  struct AxisTask task6;
+  task6.type = AXIS_TASK_TYPE_MOVE;
+  task6.degree = 30;
+  task6.speed = 2;
+  task6.relative = false;
+  queue_push(ax1.queue, &task6.n);
+
 
   // Ready for tasks
   ax1.state = AXIS_STATUS_IDLE;
@@ -66,6 +87,13 @@ void TIM2_IRQHandler(void)
   {
   case AXIS_STATUS_IDLE:
       extract_task(&ax1);        
+    break;
+
+  case AXIS_STATUS_WAIT:
+    if(millis() >= ax1.wait_until_ms){
+      // continue
+      ax1.state = AXIS_STATUS_IDLE;
+    }
     break;
 
     case AXIS_STATUS_MOVE:
