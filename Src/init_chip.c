@@ -52,7 +52,7 @@ void PWM_Init (void){
     // Enable clock for alternative push-pull output (required for pwm)
     RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;	
 
-    //ch1 -PA0
+    //ch1 - PA0
     GPIOA->CRL |= GPIO_CRL_MODE0;  //50Mhz
     GPIOA->CRL &= ~GPIO_CRL_CNF0; //clear CNF[1:0] for PA0 
     GPIOA->CRL |= GPIO_CRL_CNF0_1; //output Push-Pull in alternative function mode
@@ -60,8 +60,6 @@ void PWM_Init (void){
     GPIOA->CRL |= GPIO_CRL_MODE1;  //50Mhz
     GPIOA->CRL &= ~GPIO_CRL_CNF1; //clear CNF[1:0] for PA1 
     GPIOA->CRL |= GPIO_CRL_CNF1_1; //output Push-Pull in alternative function mode
-
-    /*
     //ch3 - PA2
     GPIOA->CRL |= GPIO_CRL_MODE2;  //50Mhz
     GPIOA->CRL &= ~GPIO_CRL_CNF2; //clear CNF[1:0] for PA2 
@@ -70,8 +68,7 @@ void PWM_Init (void){
     GPIOA->CRL |= GPIO_CRL_MODE3;  //50Mhz
     GPIOA->CRL &= ~GPIO_CRL_CNF3; //clear CNF[1:0] for PA3 
     GPIOA->CRL |= GPIO_CRL_CNF3_1; //output Push-Pull in alternative function mode
-    */
-
+    
     //TIM2 Settings
     RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
     TIM2->CR1 |= TIM_CR1_ARPE;  //autorelode mode
@@ -81,18 +78,21 @@ void PWM_Init (void){
 
     TIM2->ARR  = 1024; // 72MHz / 3 (PSC) / 1024 (ARR) = 23437.5 Hz
     TIM2->CCR1 = 1; //ch1 1duty cycle
-    TIM2->CCR2 = 100; //ch2 1duty cycle
-    //TIM2->CCR3 = 500; //ch3 duty cycle
-    //TIM2->CCR4 = 80; //ch4 duty cycle
+    TIM2->CCR2 = 1; //ch2 1duty cycle
+    TIM2->CCR3 = 1; //ch3 duty cycle
+    TIM2->CCR4 = 1; //ch4 duty cycle
 
     //TIM2->CCER |= TIM_CCER_CC2P;  //polarity of output signal
     //Capture/Compare 2 output enable
     TIM2->CCER |= TIM_CCER_CC1E | TIM_CCER_CC2E | TIM_CCER_CC3E | TIM_CCER_CC4E;
     //Output Compare Mode - 110 - PWM mode 1
     TIM2->CCMR1 |= (TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1); 
-    TIM2->CCMR1 |= (TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1);
+    //Output Compare Mode - 111 - PWM mode 2
+    TIM2->CCMR1 |= (TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2M_0);
+    //Output Compare Mode - 110 - PWM mode 1
     TIM2->CCMR2 |= (TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1);
-    TIM2->CCMR2 |= (TIM_CCMR2_OC4M_2 | TIM_CCMR2_OC4M_1);
+    //Output Compare Mode - 111 - PWM mode 2
+    TIM2->CCMR2 |= (TIM_CCMR2_OC4M_2 | TIM_CCMR2_OC4M_1 | TIM_CCMR2_OC4M_0);
 
     TIM2->DIER |= TIM_DIER_UIE; // Enable tim2 interrupt
 

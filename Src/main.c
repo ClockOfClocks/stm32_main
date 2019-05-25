@@ -69,14 +69,10 @@ void Axis_Init (void){
   ax1.target_pointer_position = INITIAL_POINTER_POSITION;
   ax1.direction = true;
 
-  ax1.sin_pwm_pointer = & TIM2->CCR1;
-  ax1.cos_pwm_pointer = & TIM2->CCR2;
-  ax1.sin_cos_direction[0] = ( GPIO_BSRR_BS8 | GPIO_BSRR_BR9 );
-  ax1.sin_cos_direction[1] = ( GPIO_BSRR_BR8 | GPIO_BSRR_BS9 );
-  ax1.sin_cos_direction[2] = ( GPIO_BSRR_BS10 | GPIO_BSRR_BR11 );
-  ax1.sin_cos_direction[3] = ( GPIO_BSRR_BR10 | GPIO_BSRR_BS11 );
-  ax1.sin_gpio_port_bsrr = & GPIOB->BSRR;
-  ax1.cos_gpio_port_bsrr = & GPIOB->BSRR;
+  ax1.sin_pwm_channel1 = & TIM2->CCR1;
+  ax1.sin_pwm_channel2 = & TIM2->CCR2;
+  ax1.cos_pwm_channel1 = & TIM2->CCR3;
+  ax1.cos_pwm_channel2 = & TIM2->CCR4; 
 }
 
 void TIM2_IRQHandler(void)

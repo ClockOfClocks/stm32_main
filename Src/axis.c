@@ -26,24 +26,14 @@ void update_axis_sin_cos(struct Axis *axis){
 
     int16_t sin_value = sin_data[ sin_pointer ];
     int16_t cos_value = sin_data[ cos_pointer ];
-    
-    if(sin_value < 0){
-      *axis->sin_gpio_port_bsrr = axis->sin_cos_direction[1];
-      *axis->sin_pwm_pointer = -sin_value;
-    }else{
-      // Positive or zero
-      *axis->sin_gpio_port_bsrr = axis->sin_cos_direction[0];
-      *axis->sin_pwm_pointer = sin_value;
-    }
 
-    if(cos_value < 0){
-      *axis->cos_gpio_port_bsrr = axis->sin_cos_direction[3];
-      *axis->cos_pwm_pointer = -cos_value;
-    }else{
-      // Positive or zero
-      *axis->cos_gpio_port_bsrr = axis->sin_cos_direction[2];
-      *axis->cos_pwm_pointer = cos_value;
-    }
+    uint16_t sin_pwm_ccr = ( sin_value / 2 ) + 512;
+    *axis->sin_pwm_channel1 = sin_pwm_ccr;
+    *axis->sin_pwm_channel2 = sin_pwm_ccr;
+    
+    uint16_t cos_pwm_ccr = ( cos_value / 2 ) + 512;
+    *axis->cos_pwm_channel1 = cos_pwm_ccr;
+    *axis->cos_pwm_channel2 = cos_pwm_ccr;
 }
 
 void set_axis_speed(struct Axis *axis, float degreePerSecond){

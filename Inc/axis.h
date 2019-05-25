@@ -33,11 +33,10 @@ struct Axis {
    uint32_t target_pointer_position; 
    uint32_t wait_until_ms;
 
-   volatile uint32_t *sin_pwm_pointer;
-   volatile uint32_t *cos_pwm_pointer;
-   volatile uint32_t *sin_gpio_port_bsrr;
-   volatile uint32_t *cos_gpio_port_bsrr;
-   uint32_t sin_cos_direction[4]; // [+sin, -sin, +cos, -cos]
+   volatile uint32_t *sin_pwm_channel1;
+   volatile uint32_t *sin_pwm_channel2;
+   volatile uint32_t *cos_pwm_channel1;
+   volatile uint32_t *cos_pwm_channel2;
 
    struct Queue *queue;
 };
