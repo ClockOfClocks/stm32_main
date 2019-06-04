@@ -32,18 +32,19 @@ void GPIO_Init (void){
 
     RCC->APB2ENR |= RCC_APB2ENR_IOPBEN; // enable clock for port B
 
-    GPIOB->CRH &= ~GPIO_CRH_CNF8;
-    GPIOB->CRH |= GPIO_CRH_MODE8_0;
+    // Input pull-up for Hall sensors, cnf1=1, cnf0=0, mode1,0=0
+    GPIOB->CRH &= ~(GPIO_CRH_CNF8 | GPIO_CRH_MODE8);
+    GPIOB->CRH |= GPIO_CRH_CNF8_1;
+    GPIOB->ODR |= GPIO_ODR_ODR8; //enable pull-up
 
-    GPIOB->CRH &= ~GPIO_CRH_CNF9;
-    GPIOB->CRH |= GPIO_CRH_MODE9_0;
+    GPIOB->CRH &= ~(GPIO_CRH_CNF9 || GPIO_CRH_MODE9);
+    GPIOB->CRH |= GPIO_CRH_CNF9_1;
+    GPIOB->ODR |= GPIO_ODR_ODR9;
 
-
-    GPIOB->CRH &= ~GPIO_CRH_CNF10;
-    GPIOB->CRH |= GPIO_CRH_MODE10_0;
-
-    GPIOB->CRH &= ~GPIO_CRH_CNF11;
-    GPIOB->CRH |= GPIO_CRH_MODE11_0;
+    // Setup on-board led to test hall sensor
+    RCC->APB2ENR |= RCC_APB2ENR_IOPCEN; // enable clock for port B
+    GPIOC->CRH &= ~GPIO_CRH_CNF13;
+    GPIOC->CRH |= GPIO_CRH_MODE13_0;
 }
 
 void PWM_Init (void){

@@ -15,6 +15,10 @@ int main(void){
 	PWM_Init();
 
   // Test tasks
+  struct AxisTask task0;
+  task0.type = AXIS_TASK_TYPE_CALIBRATION;
+  queue_push(ax1.queue, &task0.n);
+  
   struct AxisTask task;
   task.type = AXIS_TASK_TYPE_MOVE;
   task.degree = 15;
@@ -53,6 +57,7 @@ int main(void){
   task6.relative = false;
   queue_push(ax1.queue, &task6.n);
 
+  // queue_remove_all(ax1.queue);
 
   // Ready for tasks
   ax1.state = AXIS_STATUS_IDLE;
@@ -60,6 +65,11 @@ int main(void){
 	while(1)
 	{
     // Do nothing
+    if ((GPIOB->IDR & GPIO_IDR_IDR8) == GPIO_IDR_IDR8){
+      GPIOC->BSRR = GPIO_BSRR_BS13;
+    }else{
+      GPIOC->BSRR = GPIO_BSRR_BR13;
+    }
 	}
 }
 
@@ -93,6 +103,7 @@ void TIM2_IRQHandler(void)
     break;
 
     case AXIS_STATUS_MOVE:
+    case AXIS_STATUS_CALIBRATION:    
       if(ax1.direction){
         ax1.pointer_position += ax1.pointer_diff_per_interruption;
         update_axis_sin_cos(& ax1);
@@ -108,10 +119,40 @@ void TIM2_IRQHandler(void)
           ax1.state = AXIS_STATUS_IDLE;
         }
       }
+
+      if(AXIS_STATUS_CALIBRATION == ax1.state){
+        if ((GPIOB->IDR & GPIO_IDR_IDR8) != GPIO_IDR_IDR8){
+          if(ax1.calibration_state == AXIS_CALIBRATION_SEARCH) {
+            ax1.calibration_pointer_position = ax1.pointer_position;
+            ax1.calibration_state = AXIS_CALIBRATION_DETECTED;
+          }
+        }else {
+          if(ax1.calibration_state == AXIS_CALIBRATION_INIT) {
+            // do not track case when magnet detected in the beginning of calibration
+            ax1.calibration_state = AXIS_CALIBRATION_SEARCH;
+          }else if(ax1.calibration_state == AXIS_CALIBRATION_DETECTED) {
+
+            // initial position + position of magnet center
+            ax1.pointer_position = INITIAL_POINTER_POSITION + (ax1.pointer_position - ax1.calibration_pointer_position ) / 2;
+            ax1.calibration_state = AXIS_CALIBRATION_FINISHED;
+
+            // if no tasks in the queue, move to home position after calibratin finish
+            if(queue_size(ax1.queue) == 0){
+              struct AxisTask task;
+              task.type = AXIS_TASK_TYPE_MOVE;
+              task.degree = 0;
+              task.speed = 10;
+              task.relative = false;
+              queue_push(ax1.queue, &task.n);
+            }
+            // pick next task
+            ax1.state = AXIS_STATUS_IDLE;
+          }
+        }
+      }
     break;
 
   default:
     break;
   }
 }
-

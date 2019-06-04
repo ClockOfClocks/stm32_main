@@ -22,8 +22,14 @@
 #define AXIS_STATUS_IDLE 3
 #define AXIS_STATUS_WAIT 4
 
+#define AXIS_CALIBRATION_INIT 0
+#define AXIS_CALIBRATION_SEARCH 1
+#define AXIS_CALIBRATION_DETECTED 2
+#define AXIS_CALIBRATION_FINISHED 3
+
 #define AXIS_TASK_TYPE_MOVE 0
 #define AXIS_TASK_TYPE_WAIT 1
+#define AXIS_TASK_TYPE_CALIBRATION 2
 
 struct Axis {
    uint32_t pointer_position;
@@ -32,6 +38,8 @@ struct Axis {
    int16_t pointer_diff_per_interruption; // speed
    uint32_t target_pointer_position; 
    uint32_t wait_until_ms;
+   uint8_t calibration_state;
+   uint32_t calibration_pointer_position; // position when magnet detected first time
 
    volatile uint32_t *sin_pwm_channel1;
    volatile uint32_t *sin_pwm_channel2;

@@ -66,6 +66,13 @@ void extract_task(struct Axis *axis){
         // Let's move axis 
         axis->state = AXIS_STATUS_MOVE;
         break;
+      case AXIS_TASK_TYPE_CALIBRATION:
+        set_axis_speed(axis, 30);
+        move_axis_to(axis, 720, true);
+        axis->calibration_state = AXIS_CALIBRATION_INIT;
+        // Let's find home 
+        axis->state = AXIS_STATUS_CALIBRATION;
+        break;
       case AXIS_TASK_TYPE_WAIT:
         axis->wait_until_ms = millis() + task->wait_ms;
         axis->state = AXIS_STATUS_WAIT;
