@@ -6,5 +6,6 @@
 #include "axis.h"
 #include "timing.h"
 #include "queue.h"
+#include "usart.h"
 
 void Axis_Init (void);

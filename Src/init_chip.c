@@ -102,3 +102,35 @@ void PWM_Init (void){
 
     NVIC_EnableIRQ(TIM2_IRQn); // enable interrupt
 }
+
+void UART_Init (void){
+    RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+    RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
+
+    // tx setup
+    GPIOA->CRH |= GPIO_CRH_CNF9_1;
+    GPIOA->CRH &= ~GPIO_CRH_CNF9_0; //
+    GPIOA->CRH |= GPIO_CRH_MODE9;
+
+    // rx setup
+    GPIOA->CRH |= GPIO_CRH_CNF10_0;
+    GPIOA->CRH &= ~GPIO_CRH_CNF10_1; // 
+    GPIOA->CRH &= ~GPIO_CRH_MODE10;
+
+    // tx/rx switch output
+    GPIOA->CRH &= ~GPIO_CRH_CNF11;
+    GPIOA->CRH |= GPIO_CRH_MODE11;
+
+    // baudrate
+    USART1->BRR = 0x1D4C; // 9600
+    USART1->CR1 |= USART_CR1_TE; // enable TX
+    USART1->CR1 |= USART_CR1_RE; // enable RX
+    USART1->CR1 |= USART_CR1_UE; // enable usart
+
+    USART1->CR1 |= USART_CR1_RXNEIE; // enable interruption on receive
+    NVIC_EnableIRQ(USART1_IRQn);
+
+    // tx/rx switch default: rx
+    GPIOA->BSRR = GPIO_BSRR_BR11;
+}

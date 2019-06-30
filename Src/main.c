@@ -1,5 +1,6 @@
 #include "main.h"
 
+
 struct Axis ax1;
  
 int main(void){
@@ -13,7 +14,9 @@ int main(void){
   Systick_Init();
 	GPIO_Init();
 	PWM_Init();
-
+  UART_Init();
+  
+/*
   // Test tasks
   struct AxisTask task0;
   task0.type = AXIS_TASK_TYPE_CALIBRATION;
@@ -56,6 +59,7 @@ int main(void){
   task6.speed = 2;
   task6.relative = false;
   queue_push(ax1.queue, &task6.n);
+*/
 
   // queue_remove_all(ax1.queue);
 
@@ -155,4 +159,23 @@ void TIM2_IRQHandler(void)
   default:
     break;
   }
+}
+
+void USART1_IRQHandler (void){
+	
+	if (USART1->SR & USART_SR_RXNE){		
+		USART1->SR &= ~USART_SR_RXNE;
+		
+  char input = USART1->DR;
+  float x = (float)(input - '0');
+
+  //USART1_Send(input);
+
+  struct AxisTask task;
+  task.type = AXIS_TASK_TYPE_MOVE;
+  task.degree = x;
+  task.speed = 10;
+  task.relative = false;
+  queue_push(ax1.queue, &task.n);
+	}	
 }

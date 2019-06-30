@@ -56,6 +56,7 @@ void extract_task(struct Axis *axis){
     if(queue_size(axis->queue) == 0){
       axis->state = AXIS_STATUS_IDLE;
     }else{
+      USART1_Send_String ("extract\r\n");
       struct AxisTask *task = queue_entry(queue_peek(axis->queue), struct AxisTask, n);
 
       switch (task->type)
