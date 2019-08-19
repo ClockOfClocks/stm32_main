@@ -16,7 +16,7 @@ void RCC_Init (void){
     RCC->CFGR |= RCC_CFGR_PLLMULL9; 														// PLL x9: clock = 8 MHz * 9 = 72 MHz
 
     RCC->CFGR |= RCC_CFGR_HPRE_DIV1;														// AHB = SYSCLK/1
-    RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;														// APB1 = HCLK/2 = 72/2 = 36MHz (why? it should be 32MHz max)
+    RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;														// APB1 = HCLK/2 = 72/2 = 36MHz
     RCC->CFGR |= RCC_CFGR_PPRE2_DIV1;														// APB2 = HCLK/1
 
     RCC->CR |= RCC_CR_PLLON;                      							// enable PLL
@@ -77,7 +77,7 @@ void PWM_Init (void){
     TIM2->CCMR2 |= TIM_CCMR2_OC3PE | TIM_CCMR2_OC4PE;
     TIM2->PSC = 3 - 1; // div for clock: F = SYSCLK / [PSC + 1] // every 3rd tick
 
-    TIM2->ARR  = 1024; // 72MHz / 3 (PSC) / 1024 (ARR) = 23437.5 Hz
+    TIM2->ARR  = 1024; // 72MHz / 3 (PSC) / 1024 (ARR) = 23437.5
     TIM2->CCR1 = 1; //ch1 1duty cycle
     TIM2->CCR2 = 1; //ch2 1duty cycle
     TIM2->CCR3 = 1; //ch3 duty cycle
@@ -102,6 +102,27 @@ void PWM_Init (void){
 
     NVIC_EnableIRQ(TIM2_IRQn); // enable interrupt
 }
+
+void TIM4_Init (void){
+    //TIM4 Settings
+    RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
+
+    TIM4->CR1 |= TIM_CR1_ARPE;  //autorelode mode
+    // TIM4->CCMR1 |= TIM_CCMR1_OC1PE | TIM_CCMR1_OC2PE;  //Output Compare Preload enable
+    // TIM4->CCMR2 |= TIM_CCMR2_OC3PE | TIM_CCMR2_OC4PE;
+    TIM4->PSC = 36 - 1; // div for clock: F = SYSCLK / [PSC + 1] // every 3rd tick
+
+    TIM4->ARR  = 100; // 36MHz / 3 (PSC) / 1024 (ARR) = 23437.5 Hz
+    TIM4->CCR1 = 1; //ch1 1duty cycle
+
+    TIM4->DIER |= TIM_DIER_UIE; // Enable tim2 interrupt
+
+    //start counting
+    TIM4->CR1 |= TIM_CR1_CEN;   
+
+    NVIC_EnableIRQ(TIM4_IRQn); // enable interrupt
+}
+
 
 void UART_Init (void){
     RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
@@ -128,9 +149,12 @@ void UART_Init (void){
     USART1->CR1 |= USART_CR1_RE; // enable RX
     USART1->CR1 |= USART_CR1_UE; // enable usart
 
-    USART1->CR1 |= USART_CR1_RXNEIE; // enable interruption on receive
+    // USART1->CR1 |= USART_CR1_RXNEIE; // enable interruption on receive
+    
     NVIC_EnableIRQ(USART1_IRQn);
 
     // tx/rx switch default: rx
-    GPIOA->BSRR = GPIO_BSRR_BR11;
+    //GPIOA->BSRR = GPIO_BSRR_BR11;
+
+    serialDisableTransfer();
 }

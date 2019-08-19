@@ -4,3 +4,4 @@ void RCC_Init (void);
 void GPIO_Init (void);
 void PWM_Init (void);
 void UART_Init (void);
+void TIM4_Init (void);

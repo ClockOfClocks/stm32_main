@@ -15,6 +15,7 @@ int main(void){
 	GPIO_Init();
 	PWM_Init();
   UART_Init();
+  TIM4_Init();
   
 /*
   // Test tasks
@@ -66,13 +67,36 @@ int main(void){
   // Ready for tasks
   ax1.state = AXIS_STATUS_IDLE;
 
+
+  SET_PAR[0] = 12; // modbus slave address
+
+  //timer 0.0001s one symbol on 9600 ~1ms
+  uart1.delay=30; // read timeout
+
+  // led off
+  GPIOC->BSRR = GPIO_BSRR_BS13;
+
+  toMov = 0;
+
 	while(1)
 	{
-    // Do nothing
-    if ((GPIOB->IDR & GPIO_IDR_IDR8) == GPIO_IDR_IDR8){
-      GPIOC->BSRR = GPIO_BSRR_BS13;
-    }else{
-      GPIOC->BSRR = GPIO_BSRR_BR13;
+    // Modbus packet complete
+    if (uart1.rxgap == 1) {
+        // parse packet
+        MODBUS_SLAVE(&uart1);
+        // reply to master
+        net_tx3(&uart1);
+    }
+
+    if(toMov > 0){
+      struct AxisTask task;
+      task.type = AXIS_TASK_TYPE_MOVE;
+      task.degree = toMov;
+      task.speed = 10;
+      task.relative = true;
+      queue_push(ax1.queue, &task.n);
+      
+      toMov = 0; // reset
     }
 	}
 }
@@ -159,23 +183,4 @@ void TIM2_IRQHandler(void)
   default:
     break;
   }
-}
-
-void USART1_IRQHandler (void){
-	
-	if (USART1->SR & USART_SR_RXNE){		
-		USART1->SR &= ~USART_SR_RXNE;
-		
-  char input = USART1->DR;
-  float x = (float)(input - '0');
-
-  //USART1_Send(input);
-
-  struct AxisTask task;
-  task.type = AXIS_TASK_TYPE_MOVE;
-  task.degree = x;
-  task.speed = 10;
-  task.relative = false;
-  queue_push(ax1.queue, &task.n);
-	}	
 }

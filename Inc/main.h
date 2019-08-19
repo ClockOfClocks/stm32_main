@@ -7,5 +7,6 @@
 #include "timing.h"
 #include "queue.h"
 #include "usart.h"
+#include "modbus.h"
 
 void Axis_Init (void);
